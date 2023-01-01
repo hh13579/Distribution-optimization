@@ -9,6 +9,29 @@
 #include <random>
 
 
+// 反转
+void reverseVector(std::vector<int32_t> &index,int i, int j) {
+    while (i < j) {
+        if (i < 0 || j < 0 || i >= index.size() || j >= index.size()) {
+            break;
+        }
+        std::swap(index[i],index[j]);
+        i++;
+        j--;
+    }
+}
+
+//把index[i]插入到index[j]后
+void insertionVector(std::vector<int32_t> &index,int i, int j) {
+    if (i < j) {
+        index.insert(index.begin() + j, index[i]);
+        index.erase(index.begin() + i);
+    } else if (i > j) {
+        int32_t temp = index[i];
+        index.erase(index.begin() + i);
+        index.insert(index.begin() + j, temp);
+    }
+}
 std::vector<std::string> splitstr(std::string str, std::string deli = " ") {
     int32_t start = 0;
     int32_t end = str.find(deli);
@@ -52,8 +75,31 @@ public:
         q_ = 0.98;   // 退火系数
         L_ = 1000;  // 每个温度时的迭代次数，即链长
         N_ = points.size();  // 配送路径的总长度
+        min_path_ = 1e9;
+    }
+    ReBuild() {
         work();
-        print_ans();
+    }
+    double path() {
+        return min_path_;
+    }
+    void print_ans() {
+        std::cout << "path_len:" << min_path_  << "km" << std::endl;
+        std::fstream file_date;
+        std::string file_name = "../小区配送路径.txt";
+        file_date.open(file_name, std::ios::out);
+        file_date << "path_len:" << get_path_len(min_index_)  << "km" << std::endl;
+        int num = 0;
+        for (auto index : min_index_) {
+            std::cout << points_[index].id << " ";
+            file_date << points_[index].name << " -> ";
+            num++;
+            if(num == 10) {
+                file_date << "\n";
+                num = 0;
+            }
+        }
+        file_date << points_[0].name;
     }
 private:
     double get_distance(Point p1, Point p2) {
@@ -77,13 +123,26 @@ private:
         return path;
     }
 
-    void creat_new_index() {
+    void creat_new_index(int case_) {
         int i = 1 + (rand() % (N_ - 1));
         int j = 1 + (rand() % (N_ - 1));
-//        std::cout << i << " " << j << std::endl;
-        std::swap(index_[i],index_[j]);
+        if (case_ == 0) {
+            std::swap(index_[i],index_[j]);
+        } else if (case_ == 1) {
+            if (i > j) {
+                std::swap(i,j);
+            }
+            reverseVector(index_, i, j);
+        } else if (case_ == 2) {
+            insertionVector(index_, i, j);
+        }
     }
     void init(int n) {
+        if (min_index_.size() > 0) {
+            index_ = min_index_;
+            return;
+        }
+        index_.clear();
         for (int i = 0; i < n; ++i) {
             index_.push_back(i);
         }
@@ -106,10 +165,10 @@ private:
         {
             for(int i=0;i<L_;i++)
             {
-                // 复制数组
 //                print_ans();
                 copy_index = index_;
-                creat_new_index(); // 产生新解
+                int case_ = rand() % 3;
+                creat_new_index(case_); // 产生新解
                 f1 = get_path_len(copy_index);
                 f2 = get_path_len(index_);
                 df = f2 - f1;
@@ -122,6 +181,10 @@ private:
                         index_ = copy_index;
                     }
                 }
+                if (min_path_ > f1) {
+                    min_path_ = f1;
+                    min_index_ = index_;
+                }
             }
             T *= q_; // 降温
 //            std::cout << "T:" << T << std::endl;
@@ -132,24 +195,7 @@ private:
         double finish = clock(); // 退火过程结束
         duration_ = (finish-start) * 1.0 /CLOCKS_PER_SEC; // 计算时间
         std::cout << "duration:" << duration_ << "s" << std::endl;
-    }
-    void print_ans() {
-        std::cout << "path_len:" << get_path_len(index_)  << "km" << std::endl;
-        std::fstream file_date;
-        std::string file_name = "../小区配送路径.txt";
-        file_date.open(file_name, std::ios::out);
-        file_date << "path_len:" << get_path_len(index_)  << "km" << std::endl;
-        int num = 0;
-        for (auto index : index_) {
-            std::cout << points_[index].id << " ";
-            file_date << points_[index].name << " -> ";
-            num++;
-            if(num == 10) {
-                file_date << "\n";
-                num = 0;
-            }
-        }
-        file_date << points_[0].name;
+        std::cout << "min_path:" << min_path_ << "km" << std::endl;
     }
     double T0_;
     double T_end_;
@@ -159,6 +205,8 @@ private:
     std::vector<Point> points_;
     std::vector<int32_t> index_;
     double duration_;
+    std::vector<int32_t> min_index_;
+    double min_path_;
 };
 
 std::pair<double, double> get_center_point(std::vector<Point> points) {
@@ -200,6 +248,15 @@ void read_and_parse() {
         std::cout << "point_size:" << points.size() << std::endl;
     }
     SA sa(points);
+    int size_ = 0;
+    while (sa.path() > 290) {
+        sa.ReBuild();
+        size_++;
+        if (size_ > 20 || sa.path() < 290) {
+            sa.print_ans();
+            break;
+        }
+    }
 }
 
 
