@@ -3,7 +3,9 @@ import requests
 import json
 import time
 import csv
+import math
 import codecs
+import gaosi as gs
 
 
 """
@@ -20,6 +22,33 @@ def getBaiduApiAk():
     """
     return "ZURIMeTBF76H3ZyAUa66yENyiNOnQUwD"
 
+
+def millerToXY(lon, lat):
+    """
+    :param lon: 经度
+    :param lat: 维度
+    :return:
+    """
+    xy_coordinate = []
+    L = 6381372 * math.pi * 2  # 地球周长
+    W = L  # 平面展开，将周长视为X轴
+    H = L / 2  # Y轴约等于周长一般
+    mill = 2.3  # 米勒投影中的一个常数，范围大约在正负2.3之间
+    x = lon * math.pi / 180  # 将经度从度数转换为弧度
+    y = lat * math.pi / 180
+    # 将纬度从度数转换为弧度
+    print("mark")
+    y1 = y
+    print(math.tan(0.25 * math.pi + 0.4 * y1))
+    y = 1.25 * math.log(math.tan(0.25 * math.pi + 0.4 * y1))  # 这里是米勒投影的转换
+
+    print("mark")
+    # 这里将弧度转为实际距离 ，转换结果的单位是公里
+    x = (W / 2) + (W / (2 * math.pi)) * x
+    y = (H / 2) - (H / (2 * mill)) * y
+    xy_coordinate.append(x, y)
+    print("mark")
+    return xy_coordinate
 
 def requestBaiduApi(keyWords, baiduAk, fileKey):
     today = time.strftime("%Y-%m-%d")
@@ -57,9 +86,10 @@ def requestBaiduApi(keyWords, baiduAk, fileKey):
                     count += 1
                     city_area = r['city']+r['area']
                     _name = r['name']
-                    _lat = str(r['location']['lat'])
-                    _lng = str(r['location']['lng'])
-                    writer.writerow([str(count),city_area, _name, _lat, _lng])
+                    _lat = float(r['location']['lat'])
+                    _lng = float(r['location']['lng'])
+                    x = gs.LB_to_xy(_lat, _lng)
+                    writer.writerow([str(count),city_area, _name, x[0], x[1]])
                     # file.writelines(str(r).strip() + '\n')
                     # print(r['city']+r['area']+" "+r['name']+" "+str(r['location']['lat']) + " " + str(r['location']['lng']))
             pageNum += 1
