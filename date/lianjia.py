@@ -5,11 +5,14 @@ import re,sys
 from fake_useragent import UserAgent
 import importlib
 import os
+import time
+import random
 importlib.reload(sys)
 f = open('xiaoqu_data.txt', 'w+')
 ua = UserAgent()
 for i in range(1,41):
     # 循环构造url
+    print("index:" + str(i))
     url = 'http://sz.lianjia.com/xiaoqu/futianqu/pg{}/'
     k = url.format(i)
     # 添加请求头，否则会被拒绝
@@ -35,17 +38,21 @@ for i in range(1,41):
     for name in lst2:
         headers = {'Referer': 'https://sz.lianjia.com/xiaoqu/',
         'user-agent':ua.random}
+        # 反爬
+        # sec = random.randint(1,20)
+        # time.sleep(sec)
+
         res = requests.get(name, headers=headers)
         info = {}
         text2 = res.text
         
         soup = BeautifulSoup(text2, 'html.parser')
+        if (len(soup.select(".xiaoquInfoContent")) < 7):
+            continue
         data_hushu = soup.select(".xiaoquInfoContent")[6].text
         title = soup.select(".detailTitle")[0].text
         xiaoqu = soup.select(".actshowMap")
         print_str = title
-        # print(title)
-        # print(data_hushu)
         print_str = print_str + " " + data_hushu
         for a in xiaoqu:
             xq = a['xiaoqu']
@@ -53,6 +60,5 @@ for i in range(1,41):
             xq = xq.replace(",", " ")
             xq = xq.replace("]", "")
             print_str = print_str + xq
-        #     print(xq)
         # print(print_str)
         f.write(print_str + os.linesep)

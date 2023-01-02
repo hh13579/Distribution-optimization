@@ -224,7 +224,7 @@ std::pair<double, double> get_center_point(std::vector<Point> points) {
 
 void read_and_parse() {
     std::fstream file_date;
-    std::string file_name = "../date_futian.txt";
+    std::string file_name = "../parser_data.txt";
     file_date.open(file_name, std::ios::in);
     std::vector<Point> points;
     if (!file_date.good()) {
@@ -236,7 +236,7 @@ void read_and_parse() {
             file_date >> temp;
             auto vec = splitstr(temp, ",");
             if (vec.size() == 5) {
-                Point point(vec[0],vec[2],vec[3],vec[4]);
+                Point point(vec[0],vec[1],vec[3],vec[4]);
                 points.push_back(point);
             }
         }
@@ -249,10 +249,10 @@ void read_and_parse() {
     }
     SA sa(points);
     int size_ = 0;
-    while (sa.path() > 290) {
+    while (sa.path() > 1300) {
         sa.ReBuild();
         size_++;
-        if (size_ > 20 || sa.path() < 290) {
+        if (size_ > 5 || sa.path() < 1300) {
             sa.print_ans();
             break;
         }
